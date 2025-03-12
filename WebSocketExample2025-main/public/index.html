@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+
+    <title>WebSocket Chat with AI</title>
+    <style>
+
+        body { font-family: Arial, sans-serif; }
+        #chatbox { 
+            width: 50%; 
+            height: 300px; 
+            border: 1px solid black; 
+            overflow-y: scroll;
+            padding: 10px; 
+            background-color: rgb(255, 255, 255);
+        }
+        .bot { 
+            color: rgb(255, 0, 0);
+            font-weight: bold; 
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Chat with AI</h1>
+    <h2 id="activeUser">Active User: </h2> <!-- Displays the active user's name -->
+
+    <div id="chatbox"></div>
+    <input type="text" id="message" placeholder="Type a message..." />
+    <button onclick="sendMessage()">Send</button>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const chatbox = document.getElementById("chatbox");
+        const input = document.getElementById("message");
+        const activeUserDisplay = document.getElementById("activeUser"); // Gets the active user display
+
+        let username = prompt("Enter your username:");        
+        if (!username || username.trim() === "") {
+            username = "Anonymous User"; // If they enter nothing, default to Anonymous User
+        }
+
+      
+        activeUserDisplay.textContent = `Active User: ${username}`;  // Display the active user's name
+
+        socket.on("chat message", (msg) => {
+            const msgElement = document.createElement("p"); // Creates a new paragraph for the message
+            msgElement.textContent = msg; // Sets the message text
+
+            if (msg.startsWith("Bot:")) {
+                msgElement.classList.add("bot"); // Styles bot messages differently
+            }
+
+            chatbox.appendChild(msgElement); // Adds the message to the chatbox
+            chatbox.scrollTop = chatbox.scrollHeight; // Scrolls to the latest message
+        });
+
+        function sendMessage() {
+            const message = input.value.trim(); // Get the input text and remove extra spaces
+            if (message === "") return; // If message is empty, do nothing
+
+            
+            const userMessageElement = document.createElement("p");// Create a new message element for the user
+            userMessageElement.textContent = `${username}: ${message}`;
+            chatbox.appendChild(userMessageElement); // Add it to the chatbox
+            chatbox.scrollTop = chatbox.scrollHeight; // Scroll down to show the new message
+
+            // Check if the message does not include "@bot" and remind the user
+            if (!message.toLowerCase().includes("@bot")) {
+                const reminderElement = document.createElement("p");
+                reminderElement.textContent = "Remember to type @bot to chat with the bott";
+                reminderElement.style.color = "red"; // Make the reminder red
+                chatbox.appendChild(reminderElement);
+                chatbox.scrollTop = chatbox.scrollHeight;
+            }
+
+            socket.emit("chat message", message);
+            input.value = "";
+        }
+    </script>
+</body>
+</html>
